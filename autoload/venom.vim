@@ -164,8 +164,14 @@ function! s:find_virtualenv(dir) abort
 		elseif filereadable(l:path)
 			" Read location of virtual-environment from text-file
 			let l:path = get(readfile(l:path, '', 1), 0)
-			if ! empty(l:path) && isdirectory(l:path)
-				return [l:path, l:log]
+			if ! empty(l:path)
+				if isdirectory(l:path)
+					return [l:path, l:log]
+				endif
+				let l:workon_path = expand('$WORKON_HOME') . '/' . l:path
+				if isdirectory(l:workon_path)
+					return [l:workon_path, l:log]
+				endif
 			endif
 		endif
 	endif
