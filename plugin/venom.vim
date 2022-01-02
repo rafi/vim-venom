@@ -38,7 +38,7 @@ endif
 
 " Project root markers
 if ! exists('g:venom_root_markers')
-	let g:venom_root_markers = ['.venv', '.venv/', '.git/']
+	let g:venom_root_markers = ['.venv', '.venv/', '.python-version', '.git/']
 endif
 
 " Detect virtualenv with external tools? (e.g. poetry, pipenv)

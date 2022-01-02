@@ -6,9 +6,11 @@ python3 import vim, sys
 
 let s:script_dir = fnamemodify(resolve(expand('<sfile>:p')), ':h')
 
+let s:unresolved_paths = []
+
 " Find project virtual-environment and activate it
 function! venom#activate(...) abort
-	if &previewwindow == 1
+	if &previewwindow == 1 || &diff == 1
 	  return
 	endif
 
@@ -28,10 +30,16 @@ function! venom#activate(...) abort
 		call s:persist_runtime(l:virtual_env)
 
 	elseif empty(l:virtual_env)
+		" Abort early if this path couldn't be resolved previously.
+		let l:file_dir = expand('%:p:h')
+		if index(s:unresolved_paths, l:file_dir) >= 0
+			return
+		endif
 		" Find virtual-environment within paths, or using tools
-		let [l:virtual_env, l:log] = s:find_virtualenv(expand('%:p:h'))
+		let [l:virtual_env, l:log] = s:find_virtualenv(l:file_dir)
 		if empty(l:virtual_env) || fnamemodify(l:virtual_env, ':t') ==# '.git'
 			call setbufvar(l:bufname, 'virtual_env', '-')
+			call add(s:unresolved_paths, l:file_dir)
 			if ! g:venom_quiet
 				call extend(l:log, ['>',
 					\ 'Unable to find project''s virtual environment.'
@@ -163,9 +171,23 @@ function! s:find_virtualenv(dir) abort
 			return [l:path, l:log]
 		elseif filereadable(l:path)
 			" Read location of virtual-environment from text-file
-			let l:path = get(readfile(l:path, '', 1), 0)
-			if ! empty(l:path) && isdirectory(l:path)
-				return [l:path, l:log]
+			let l:user_dir = get(readfile(l:path, '', 1), 0)
+			if ! empty(l:user_dir)
+				" Use file contents as an absolute path
+				if (stridx(l:user_dir, '/') >= 0 || stridx(l:user_dir, '\\') >= 0)
+						\ && isdirectory(l:user_dir)
+					return [l:user_dir, l:log]
+				endif
+				" Use file contents as a pyenv version
+				let l:pyenv_version = $PYENV_ROOT . '/versions/' . l:user_dir
+				if ! empty($PYENV_ROOT) && isdirectory(l:pyenv_version)
+					return [l:pyenv_version, l:log]
+				endif
+				" Use file contents as a virtualenvwrapper directory
+				let l:workon_on = $WORKON_HOME . '/' . l:user_dir
+				if ! empty($WORKON_HOME) && isdirectory(l:workon_on)
+					return [l:workon_on, l:log]
+				endif
 			endif
 		endif
 	endif
