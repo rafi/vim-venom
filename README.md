@@ -12,6 +12,7 @@
 * [Virtual-Environment Detection](#virtual-environment-detection)
   * [External Tools Integration](#external-tools-integration)
 * [User Events](#user-events)
+* [Lua Alternative](#lua-alternative)
 * [Caveats](#caveats)
 * [Copyright](#copyright)
 
@@ -20,13 +21,70 @@
 ## Features
 
 * Select python runtime for current project
-* Detect your project's virtualenv path via placeholders (e.g. `.venv`)
+* Detect pyenv and virtualenvwrapper placeholders (`.venv` and `.python-version`)
 * Detect virtualenv via popular tools: [pipenv], [poetry], etc.
 * User Vim events on de/activation
+* Optional Lua light-weight version
 
-## Install
+## Lua Version
 
-Ensure your neo/vim instance supports `python3`, i.e. `:echo has('python3')`
+If you choose to use the Lua version, disable vim-plugin **before** loading the
+plugin, and once loaded, run setup:
+
+```lua
+vim.g.venom_loaded = 1     -- Before plugin loaded
+require('venom').setup()   -- After plugin loaded
+```
+
+However, the current implement does _not_ support tools (poetry, pipenv)
+and Vim commands and events.
+
+The Lua API:
+
+- `require('venom').activate()`
+- `require('venom').deactivate()`
+- `require('venom').statusline()`
+
+[packer.nvim](https://github.com/wbthomason/packer.nvim) install example:
+
+```lua
+vim.g.venom_loaded = 1
+
+use {
+  'rafi/vim-venom',
+  ft = {'python'},
+  config = 'require("venom").setup()'
+}
+```
+
+[dein.vim](https://github.com/Shougo/dein.vim) install example:
+
+```viml
+call dein#add('rafi/vim-venom', {
+  \ 'on_ft': 'python',
+  \ 'hook_add': 'let g:venom_loaded = 1',
+  \ 'hook_post_source': 'lua require("venom").setup()'
+  \ })
+```
+
+You can change the default configuration:
+
+```viml
+require('venom').setup({
+	auto_activate = true,
+	echo = true,
+	quiet = false,
+	symbol = '🐍',
+	root_patterns = {'.venv', '.python-version'},
+	use_tools = true,
+	tools = {},
+})
+```
+
+## Vim Version
+
+If you choose to use the vim plugin,
+ensure your neo/vim instance supports `python3`, i.e. `:echo has('python3')`
 should print `1`.  Use your favorite plugin-manager, for example [dein.vim]:
 
 ```viml
@@ -39,7 +97,7 @@ Or, if you're using [vim-plug], I got your back too:
 Plug 'rafi/vim-venom', { 'for': 'python' }
 ```
 
-## Configuration
+## Vim Configuration
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -125,13 +183,12 @@ autocmd User VenomActivated,VenomDeactivated
 
 * By default, `FileType python` event triggers plugin activation. You can add
   other events yourself, e.g.: `autocmd BufWinEnter *.py call venom#activate()`
-* Plugin doesn't alter Neovim's `g:python3_host_prog`. I don't think if it
-  should.
+* Plugin doesn't alter Neovim's `g:python3_host_prog`. I don't think it should.
 * Mostly tested with Neovim
 
 ## Copyright
 
-© 2020 Rafael Bodill
+© 2019-2022 Rafael Bodill
 
 [vim-plug]: https://github.com/junegunn/vim-plug
 [dein.vim]: https://github.com/shougo/dein.vim
