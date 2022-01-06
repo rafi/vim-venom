@@ -5,14 +5,13 @@
 <!-- vim-markdown-toc GFM -->
 
 * [Features](#features)
-* [Install](#install)
-* [Configuration](#configuration)
+* [Lua Version](#lua-version)
+* [Vim Version](#vim-version)
 * [Functions & Commands](#functions--commands)
 * [Python Runtime Selection](#python-runtime-selection)
 * [Virtual-Environment Detection](#virtual-environment-detection)
   * [External Tools Integration](#external-tools-integration)
 * [User Events](#user-events)
-* [Lua Alternative](#lua-alternative)
 * [Caveats](#caveats)
 * [Copyright](#copyright)
 
@@ -71,13 +70,13 @@ You can change the default configuration:
 
 ```viml
 require('venom').setup({
-	auto_activate = true,
-	echo = true,
-	quiet = false,
-	symbol = '🐍',
-	root_patterns = {'.venv', '.python-version'},
-	use_tools = true,
-	tools = {},
+  auto_activate = true,
+  echo = true,
+  quiet = false,
+  symbol = '🐍',
+  root_patterns = {'.venv', '.python-version'},
+  use_tools = true,
+  tools = {},
 })
 ```
 
@@ -97,7 +96,7 @@ Or, if you're using [vim-plug], I got your back too:
 Plug 'rafi/vim-venom', { 'for': 'python' }
 ```
 
-## Vim Configuration
+You can change the default configuration:
 
 | Variable | Description | Default |
 |----------|-------------|---------|

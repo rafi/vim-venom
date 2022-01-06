@@ -50,13 +50,13 @@ M.path = (function()
 		end
 	end
 
-  local function is_absolute(filename)
-    if is_windows then
-      return filename:match '^%a:' or filename:match '^\\\\'
-    else
-      return filename:match '^/'
-    end
-  end
+	local function is_absolute(filename)
+		if is_windows then
+			return filename:match '^%a:' or filename:match '^\\\\'
+		else
+			return filename:match '^/'
+		end
+	end
 
 	local function basename(path)
 		return string.gsub(path, '(.*/)(.*)', '%2')
@@ -106,7 +106,7 @@ M.path = (function()
 	return {
 		is_dir = is_dir,
 		is_file = is_file,
-    is_absolute = is_absolute,
+		is_absolute = is_absolute,
 		is_windows = is_windows,
 		basename = basename,
 		dirname = dirname,
@@ -132,10 +132,10 @@ function M.search_ancestors(startpath, func)
 			return
 		end
 
-    found = func(path)
-    if found then
-      return found
-    end
+		found = func(path)
+		if found then
+			return found
+		end
 	end
 end
 
@@ -144,12 +144,12 @@ function M.find_pattern(...)
 	local patterns = vim.tbl_flatten { ... }
 	local function matcher(path)
 		for _, pattern in ipairs(patterns) do
-      local path_joined = M.path.join(path, pattern)
-      for _, p in ipairs(vim.fn.glob(path_joined, true, true)) do
-        if M.path.exists(p) then
-          return p
-        end
-      end
+			local path_joined = M.path.join(path, pattern)
+			for _, p in ipairs(vim.fn.glob(path_joined, true, true)) do
+				if M.path.exists(p) then
+					return p
+				end
+			end
 		end
 	end
 	return function(startpath)
