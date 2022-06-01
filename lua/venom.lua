@@ -11,9 +11,12 @@ local default_config = {
 	echo = true,
 	quiet = false,
 	symbol = '🐍',
-	root_patterns = {'.venv', '.python-version'},
+	root_patterns = { '.venv', '.python-version' },
 	use_tools = true,
-	tools = {},
+	tools = {
+		poetry = 'poetry env info -p',
+		pipenv = 'pipenv --venv',
+	},
 }
 
 local original_path = ''
@@ -26,8 +29,8 @@ local workon_home = os.getenv('WORKON_HOME')
 local M = {}
 M.config = default_config
 M.path = (function()
-	local is_windows = uv.os_uname().version:match("Windows")
-	local path_sep = is_windows and "\\" or "/"
+	local is_windows = uv.os_uname().version:match('Windows')
+	local path_sep = is_windows and '\\' or '/'
 
 	local function exists(filename)
 		local stat = uv.fs_stat(filename)
@@ -44,7 +47,7 @@ M.path = (function()
 
 	local function is_fs_root(path)
 		if is_windows then
-			return path:match '^%a:$'
+			return path:match('^%a:$')
 		else
 			return path == '/'
 		end
@@ -52,9 +55,9 @@ M.path = (function()
 
 	local function is_absolute(filename)
 		if is_windows then
-			return filename:match '^%a:' or filename:match '^\\\\'
+			return filename:match('^%a:') or filename:match('^\\\\')
 		else
-			return filename:match '^/'
+			return filename:match('^/')
 		end
 	end
 
@@ -80,9 +83,7 @@ M.path = (function()
 	end
 
 	local function path_join(...)
-		local result =
-			table.concat(
-				vim.tbl_flatten {...}, path_sep):gsub(path_sep.."+", path_sep)
+		local result = table.concat(vim.tbl_flatten({ ... }), path_sep):gsub(path_sep .. '+', path_sep)
 		return result
 	end
 
@@ -119,7 +120,7 @@ end)()
 
 -- Taken from nvim-lspconfig.
 function M.search_ancestors(startpath, func)
-	validate { func = { func, 'f' } }
+	validate({ func = { func, 'f' } })
 	local found = func(startpath)
 	if found then
 		return found
@@ -141,7 +142,7 @@ end
 
 -- Taken from nvim-lspconfig.
 function M.find_pattern(...)
-	local patterns = vim.tbl_flatten { ... }
+	local patterns = vim.tbl_flatten({ ... })
 	local function matcher(path)
 		for _, pattern in ipairs(patterns) do
 			local path_joined = M.path.join(path, pattern)
@@ -157,6 +158,16 @@ function M.find_pattern(...)
 	end
 end
 
+function M.split(s, delimiter)
+	local result = {}
+	for match in (s .. delimiter):gmatch('(.-)' .. delimiter) do
+		if match ~= '' then
+			table.insert(result, match)
+		end
+	end
+	return result
+end
+
 -- Finds project's virtual-environment path
 function M.find_virtualenv()
 	-- Try to find certain directory names or placeholder text files that
@@ -170,16 +181,19 @@ function M.find_virtualenv()
 			local file = io.open(found_path)
 			local user_dir = file:read('*l')
 			file:close()
+
 			if not (user_dir == nil or user_dir == '') then
 				-- Use file contents as an absolute path
 				if M.path.is_absolute(user_dir) and M.path.is_dir(user_dir) then
 					return user_dir
 				end
+
 				-- Use file contents as a pyenv version
 				local pyenv_version = M.path.join(pyenv_root, 'versions', user_dir)
 				if pyenv_version ~= '' and M.path.is_dir(pyenv_version) then
 					return pyenv_version
 				end
+
 				-- Use file contents as a virtualenvwrapper directory
 				local workon_dir = M.path.join(workon_home, user_dir)
 				if workon_dir ~= '' and M.path.is_dir(workon_dir) then
@@ -190,7 +204,24 @@ function M.find_virtualenv()
 	end
 
 	-- Use predefined executables to find virtualenv's location.
-	-- TODO:
+	if M.config.use_tools then
+		for tool, cmd in pairs(M.config.tools) do
+			M.echo('info', string.format('%s', cmd))
+			if vim.api.nvim_eval(string.format("executable('%s')", tool)) then
+				local handle = io.popen(cmd)
+				local result = handle:read('*a')
+				handle:close()
+
+				local lines = M.split(result, '\n')
+				if table.getn(lines) == 1 then
+					return lines[1]
+				else
+					M.echo('error', string.format('Erroneous shell output from %s %s', tool, result))
+				end
+			end
+		end
+	end
+
 	return ''
 end
 
@@ -222,10 +253,7 @@ function M.activate()
 			vim.api.nvim_buf_set_var(bufnr, 'virtual_env', '-')
 			table.insert(unresolved_paths, file_dir)
 			if not M.config.quiet then
-				print(
-					'Unable to find project\'s virtual environment.'
-						..' Run :messages to view debug information.'
-				)
+				print("Unable to find project's virtual environment." .. ' Run :messages to view debug information.')
 			end
 			return false
 		end
@@ -251,19 +279,14 @@ function M.activate()
 	-- INFO: Doesn't change python's sys.path.
 	-- original_syspath = vim.fn.py3eval('sys.path')
 
-	local bin_path = M.path.join(
-		virtual_env, M.path.is_windows and 'Scripts' or 'bin')
+	local bin_path = M.path.join(virtual_env, M.path.is_windows and 'Scripts' or 'bin')
 
 	vim.fn.setenv('VIRTUAL_ENV', virtual_env)
 	vim.fn.setenv('PATH', bin_path .. ':' .. os.getenv('PATH'))
 	vim.api.nvim_buf_set_var(bufnr, 'virtual_env', virtual_env)
 
 	if M.config.echo then
-		M.echo('info', string.format(
-			'Activated environment "%s" %s',
-			M.path.basename(virtual_env),
-			virtual_env
-		))
+		M.echo('info', string.format('Activated environment "%s" %s', M.path.basename(virtual_env), virtual_env))
 	end
 end
 
@@ -285,11 +308,7 @@ function M.deactivate()
 	-- INFO: Doesn't change python's sys.path.
 
 	if M.config.echo then
-		M.echo('info', string.format(
-			'Deactivated environment "%s" %s',
-			M.path.basename(virtual_env),
-			virtual_env
-		))
+		M.echo('info', string.format('Deactivated environment "%s" %s', M.path.basename(virtual_env), virtual_env))
 	end
 end
 
@@ -305,7 +324,7 @@ end
 
 function M.setup(config)
 	config = config or {}
-	validate {
+	validate({
 		auto_activate = { config.auto_activate, 'b', true },
 		echo = { config.echo, 'b', true },
 		quiet = { config.quiet, 'b', true },
@@ -313,24 +332,26 @@ function M.setup(config)
 		root_patterns = { config.root_patterns, 't', true },
 		use_tools = { config.use_tools, 'b', true },
 		tools = { config.use_tools, 't', true },
-	}
+	})
 
 	M.config = vim.tbl_extend('keep', config, default_config)
 
 	if M.config.auto_activate then
-		vim.cmd [[
+		vim.cmd([[
 			augroup venom_plugin
 			autocmd!
 			autocmd FileType python lua require'venom'.activate()
 			augroup END
-		]]
+		]])
 	end
 end
 
 -- Asynchronous echomsg
 function M.echo(type, msg)
 	local types = { info = 'Identifier', error = 'ErrorMsg' }
-	vim.defer_fn(function() M._echo(types[type], msg) end, 10)
+	vim.defer_fn(function()
+		M._echo(types[type], msg)
+	end, 10)
 end
 
 -- Asynchronous echomsg function callback
@@ -342,7 +363,7 @@ function M._echo(highlight, msg)
 		msgs = msg
 	end
 	for _, v in ipairs(msgs) do
-		vim.api.nvim_echo({ {'[venom] ' .. v, highlight} }, true, {})
+		vim.api.nvim_echo({ { '[venom] ' .. v, highlight } }, true, {})
 	end
 end
 
