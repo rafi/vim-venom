@@ -1,31 +1,55 @@
 # Vim Venom
 
-> Activates your Python virtual-environments while working in Neo/Vim.
+:warning: **DEPRECATED! :warning: This plugin is no-longer maintained.**
 
-<!-- vim-markdown-toc GFM -->
+**Please see [github.com/rafi/neoconf-venom.nvim] for a Neovim plugin that
+properly sets LSP servers' settings.**
 
-* [Features](#features)
-* [Lua Version](#lua-version)
-* [Vim Version](#vim-version)
-* [Functions & Commands](#functions--commands)
-* [Python Runtime Selection](#python-runtime-selection)
-* [Virtual-Environment Detection](#virtual-environment-detection)
-  * [External Tools Integration](#external-tools-integration)
-* [User Events](#user-events)
-* [Caveats](#caveats)
-* [Copyright](#copyright)
-
-<!-- vim-markdown-toc -->
+If you are _not_ using Neovim, this might still work for you.
 
 ## Features
 
+> Activates your Python virtual-environments while working in Neo/Vim.
+
 * Select python runtime for current project
-* Detect pyenv and virtualenvwrapper placeholders (`.venv` and `.python-version`)
+* Detect [pyenv] and virtualenvwrapper placeholders (`.venv` and `.python-version`)
 * Detect virtualenv via popular tools: [pipenv], [poetry], etc.
 * User Vim events on de/activation
 * Optional Lua light-weight version
 
+## Vim Version
+
+If you choose to use the vim plugin,
+ensure your neo/vim instance supports `python3`, i.e. `:echo has('python3')`
+should print `1`.  Use your favorite plugin-manager, for example [dein.vim]:
+
+```viml
+call dein#add('rafi/vim-venom', { 'on_ft': 'python' })
+```
+
+Or, if you're using [vim-plug], I got your back too:
+
+```viml
+Plug 'rafi/vim-venom', { 'for': 'python' }
+```
+
+You can change the default configuration:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `g:venom_auto_activate` | Automatically tries to detect and activate virtualenv | `1`
+| `g:venom_use_tools` | Use external-tools to detect virtualenv | `1`
+| `g:venom_echo` | Upon activation show friendly message | `1`
+| `g:venom_quiet` | Be quiet when failing to find environments | `0`
+| `g:venom_symbol` | Icon for statusline helper function | `🐍`
+| `g:venom_tools` | External-tools configuration | See [here](#external-tools-integration)
+
 ## Lua Version
+
+:warning: **DEPRECATED!** :warning: This plugin is no-longer maintained.
+
+**Please see [github.com/rafi/neoconf-venom.nvim] for a Neovim plugin that
+properly sets LSP servers' settings.**
 
 If you choose to use the Lua version, disable vim-plugin **before** loading the
 plugin, and once loaded, run setup:
@@ -40,9 +64,9 @@ and Vim commands and events.
 
 The Lua API:
 
-- `require('venom').activate()`
-- `require('venom').deactivate()`
-- `require('venom').statusline()`
+* `require('venom').activate()`
+* `require('venom').deactivate()`
+* `require('venom').statusline()`
 
 [packer.nvim](https://github.com/wbthomason/packer.nvim) install example:
 
@@ -80,38 +104,11 @@ require('venom').setup({
 })
 ```
 
-## Vim Version
-
-If you choose to use the vim plugin,
-ensure your neo/vim instance supports `python3`, i.e. `:echo has('python3')`
-should print `1`.  Use your favorite plugin-manager, for example [dein.vim]:
-
-```viml
-call dein#add('rafi/vim-venom', { 'on_ft': 'python' })
-```
-
-Or, if you're using [vim-plug], I got your back too:
-
-```viml
-Plug 'rafi/vim-venom', { 'for': 'python' }
-```
-
-You can change the default configuration:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `g:venom_auto_activate` | Automatically tries to detect and activate virtualenv | `1`
-| `g:venom_use_tools` | Use external-tools to detect virtualenv | `1`
-| `g:venom_echo` | Upon activation show friendly message | `1`
-| `g:venom_quiet` | Be quiet when failing to find environments | `0`
-| `g:venom_symbol` | Icon for statusline helper function | `🐍`
-| `g:venom_tools` | External-tools configuration | See [here](#external-tools-integration)
-
 ## Functions & Commands
 
 * `:VenomActivate [path]` / `venom#activate([path])`
-  - Without argument: Try to detect virtual-environment
-  - With argument: Find python runtime in path and place a marker to persist
+  * Without argument: Try to detect virtual-environment
+  * With argument: Find python runtime in path and place a marker to persist
     selection.
 * `:VenomDeactivate` / `venom#deactivate()`
 * `venom#statusline()`
@@ -138,7 +135,7 @@ See the following `g:venom_tools` for external tools usage & support.
 ### External Tools Integration
 
 Enabling `g:venom_use_tools` leverages external tools in-order to resolve
-the project's virtual-environment path, plugin currently supports:
+the project's virtual-environment path, plugin now supports:
 
 * [poetry]
 * [pipenv]
@@ -197,3 +194,4 @@ autocmd User VenomActivated,VenomDeactivated
 [deoplete]: https://github.com/Shougo/deoplete.nvim
 [deoplete-jedi]: https://github.com/deoplete-plugins/deoplete-jedi
 [jedi-vim]: https://github.com/davidhalter/jedi-vim
+[github.com/rafi/neoconf-venom.nvim]: https://github.com/rafi/neoconf-venom.nvim
